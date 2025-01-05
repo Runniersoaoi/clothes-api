@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "ProductImage" ALTER COLUMN "url" SET NOT NULL,
+ALTER COLUMN "url" SET DATA TYPE TEXT;
