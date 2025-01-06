@@ -1,16 +1,16 @@
 import {
-  IsArray,
-  IsBoolean,
-  IsOptional,
+  IsEmail,
   IsString,
   Matches,
   MaxLength,
   MinLength,
 } from 'class-validator';
 
-export class CreateUserDto {
+export class LoginUserDto {
   @IsString()
+  @IsEmail()
   email: string;
+
   @IsString()
   @MinLength(6)
   @MaxLength(50)
@@ -19,13 +19,4 @@ export class CreateUserDto {
       'The password must have a Uppercase, lowercase letter and a number',
   })
   password: string;
-  @IsString()
-  fullName: string;
-  @IsBoolean()
-  @IsOptional()
-  isActive?: boolean;
-  @IsArray()
-  @IsString({ each: true })
-  @IsOptional()
-  roles?: string[];
 }

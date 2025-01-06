@@ -3,15 +3,22 @@ import {
   Injectable,
   InternalServerErrorException,
   NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { PrismaService } from 'src/prisma.service';
 import * as bcrypt from 'bcrypt';
+import { JwtPayload } from './interfaces/jwt-payload.interface';
+import { JwtService } from '@nestjs/jwt';
+import { LoginUserDto } from './dto/login-user.dto';
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly jwtService: JwtService,
+  ) {}
 
   async create(createUserDto: CreateUserDto) {
     try {
@@ -21,7 +28,7 @@ export class UsersService {
           password: bcrypt.hashSync(createUserDto.password, 10),
         },
       });
-      return user;
+      return { ...user, token: this.getJwtToken({ id: user.id }) };
     } catch (error) {
       this.handleDBErrors(error);
     }
@@ -77,6 +84,32 @@ export class UsersService {
     } catch (error) {
       this.handleDBErrors(error);
     }
+  }
+
+  async login(loginUserDto: LoginUserDto) {
+    const { password, email } = loginUserDto;
+
+    const user = await this.prisma.user.findFirst({
+      where: {
+        email: email,
+      },
+    });
+
+    if (!user)
+      throw new UnauthorizedException('Credentials are not valid (email)');
+
+    if (!bcrypt.compareSync(password, user.password))
+      throw new UnauthorizedException('Credentials are not valid (password)');
+
+    return {
+      ...user,
+      token: this.getJwtToken({ id: user.id }),
+    };
+  }
+
+  private getJwtToken(payload: JwtPayload) {
+    const token = this.jwtService.sign(payload);
+    return token;
   }
 
   private handleDBErrors(error: any): never {
